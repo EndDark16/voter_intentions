@@ -1,0 +1,19 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ml_service/Dockerfile
+    container_name: voter-knn-api
+    ports:
+      - "8000:8000"
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+    container_name: voter-knn-frontend
+    depends_on:
+      - api
+    ports:
+      - "4173:80"

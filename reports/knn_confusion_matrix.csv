@@ -1,0 +1,12 @@
+Actual,CAND_Azon,CAND_Boreal,CAND_Civico,CAND_Demetra,CAND_Electra,CAND_Frontera,CAND_Gaia,CAND_Halley,CAND_Jade,Undecided
+CAND_Azon,11,0,0,0,0,1,0,0,1,13
+CAND_Boreal,0,0,0,1,1,0,0,0,0,5
+CAND_Civico,0,0,5,0,0,0,0,0,0,10
+CAND_Demetra,1,0,2,8,0,0,0,0,0,13
+CAND_Electra,0,0,2,2,1,0,0,0,1,8
+CAND_Frontera,1,0,0,2,0,0,1,0,0,4
+CAND_Gaia,4,1,0,2,2,0,7,1,0,15
+CAND_Halley,0,2,0,0,0,0,2,0,0,4
+CAND_Icaro,3,0,1,0,0,0,1,0,0,3
+CAND_Jade,0,0,1,1,0,0,0,1,1,5
+Undecided,1,0,0,1,0,0,1,0,0,446
