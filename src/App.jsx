@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 
 const numericFields = [
   { name: "age", label: "Edad", min: 18, max: 120, step: 1 },
@@ -82,39 +82,11 @@ export default function App() {
       const response = await fetch(`${API_URL}/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          age: Number(formData.age),
-          gender: Number(formData.gender),
-          education: Number(formData.education),
-          employment_status: Number(formData.employment_status),
-          employment_sector: Number(formData.employment_sector),
-          income_bracket: Number(formData.income_bracket),
-          marital_status: Number(formData.marital_status),
-          household_size: Number(formData.household_size),
-          has_children: Number(formData.has_children),
-          urbanicity: Number(formData.urbanicity),
-          region: Number(formData.region),
-          voted_last: Number(formData.voted_last),
-          party_id_strength: Number(formData.party_id_strength),
-          union_member: Number(formData.union_member),
-          public_sector: Number(formData.public_sector),
-          home_owner: Number(formData.home_owner),
-          small_biz_owner: Number(formData.small_biz_owner),
-          owns_car: Number(formData.owns_car),
-          wa_groups: Number(formData.wa_groups),
-          refused_count: Number(formData.refused_count),
-          attention_check: Number(formData.attention_check),
-          will_turnout: Number(formData.will_turnout),
-          undecided: Number(formData.undecided),
-          preference_strength: Number(formData.preference_strength),
-          survey_confidence: Number(formData.survey_confidence),
-          tv_news_hours: Number(formData.tv_news_hours),
-          social_media_hours: Number(formData.social_media_hours),
-          trust_media: Number(formData.trust_media),
-          civic_participation: Number(formData.civic_participation),
-          job_tenure_years: Number(formData.job_tenure_years),
-        }),
+        body: JSON.stringify(
+          Object.fromEntries(
+            Object.entries(formData).map(([key, value]) => [key, Number.isNaN(Number(value)) ? value : Number(value)]),
+          ),
+        ),
       });
 
       if (!response.ok) {
@@ -137,17 +109,22 @@ export default function App() {
           <p className="eyebrow">Predicción electoral · KNN</p>
           <h1>Vincula nuevos votantes y conoce su afinidad.</h1>
           <p className="sub">
-            Registra los indicadores sociodemográficos y políticos. El servicio de
-            Machine Learning calculará la intención de voto usando el modelo
-            entrenado sobre 3,000 casos reales.
+            Registra los indicadores sociodemográficos y políticos. El servicio de ML calculará la
+            intención de voto usando el modelo entrenado sobre 3,000 casos.
           </p>
         </div>
         <div className="cta-block">
           <p>
-            API en vivo: <a href="https://voterintentionsbackend.onrender.com" target="_blank" rel="noreferrer">Render</a>
+            API en vivo:
+            <a href="https://voterintentionsbackend.onrender.com" target="_blank" rel="noreferrer">
+              Render
+            </a>
           </p>
           <p>
-            Frontend: <a href="https://voterintentions.vercel.app" target="_blank" rel="noreferrer">Vercel</a>
+            Frontend:
+            <a href="https://voterintentions.vercel.app" target="_blank" rel="noreferrer">
+              Vercel
+            </a>
           </p>
         </div>
       </header>
@@ -156,8 +133,7 @@ export default function App() {
         <div className="form-column">
           <h2>Ficha del votante</h2>
           <p className="hint">
-            Completa cada campo numérico según las escalas indicadas (0 a 5, 0/1, etc.).
-            Las preferencias deben coincidir con las opciones visibles.
+            Completa los campos según las escalas indicadas y selecciona las preferencias visibles en las listas.
           </p>
           <form onSubmit={handleSubmit}>
             <div className="grid">
@@ -175,7 +151,7 @@ export default function App() {
                 </label>
               ))}
               <label>
-                <span>Preferencia principal (partido/candidato)</span>
+                <span>Preferencia principal</span>
                 <select
                   value={formData.primary_choice}
                   onChange={(e) => handleChange("primary_choice", e.target.value)}
@@ -188,7 +164,7 @@ export default function App() {
                 </select>
               </label>
               <label>
-                <span>Preferencia secundaria (respaldo)</span>
+                <span>Preferencia secundaria</span>
                 <select
                   value={formData.secondary_choice}
                   onChange={(e) => handleChange("secondary_choice", e.target.value)}
@@ -211,11 +187,10 @@ export default function App() {
         <aside className="result-pane">
           <h3>Resultado y notas</h3>
           <ul>
-            <li>El modelo KNN utiliza distancia Manhattan/Euclidiana + PCA opcional.</li>
-            <li>Incluye balanceo en el set de entrenamiento y evaluación macro F1.</li>
-            <li>Recuerda que la indecisión se controla con umbrales de probabilidad.</li>
+            <li>Modelo KNN con búsqueda de hiperparámetros y reducción PCA opcional.</li>
+            <li>Entrenamiento balanceado + métricas macro F1 y balanced accuracy.</li>
+            <li>Umbral configurable para clasificar como "Undecided".</li>
           </ul>
-
           {result ? (
             <div className="result-card">
               <p>Intención estimada</p>
@@ -224,15 +199,13 @@ export default function App() {
             </div>
           ) : (
             <div className="result-card ghost">
-              Completa la ficha y presiona “Predecir intención” para ver la estimación.
+              Completa la ficha para visualizar la predicción del modelo.
             </div>
           )}
         </aside>
       </section>
 
-      <footer>
-        By Andres Melo &amp; Thomas Cristancho – Universidad de Cundinamarca 2025
-      </footer>
+      <footer>By Andres Melo & Thomas Cristancho – Universidad de Cundinamarca 2025</footer>
     </main>
   );
 }
