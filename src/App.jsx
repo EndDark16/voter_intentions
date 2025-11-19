@@ -19,7 +19,7 @@ const numericFields = [
   { name: "home_owner", label: "Propietario (0/1)", min: 0, max: 1, step: 1 },
   { name: "small_biz_owner", label: "Micronegocio (0/1)", min: 0, max: 1, step: 1 },
   { name: "owns_car", label: "Tiene auto (0/1)", min: 0, max: 1, step: 1 },
-  { name: "wa_groups", label: "Participa en WA grupos (0-5)", min: 0, max: 5, step: 1 },
+  { name: "wa_groups", label: "Participa en grupos (0-5)", min: 0, max: 5, step: 1 },
   { name: "refused_count", label: "Respuestas rehusadas", min: 0, max: 10, step: 1 },
   { name: "attention_check", label: "Atención (0/1)", min: 0, max: 1, step: 1 },
   { name: "will_turnout", label: "Dice que votará (0/1)", min: 0, max: 1, step: 1 },
@@ -48,6 +48,8 @@ const candidateOptions = [
 
 const API_URL =
   import.meta.env.VITE_API_URL ?? "https://voterintentionsbackend.onrender.com";
+
+const formatNumber = (value) => (value * 100).toFixed(1) + "%";
 
 export default function App() {
   const initialState = useMemo(() => {
@@ -102,6 +104,8 @@ export default function App() {
     }
   };
 
+  const topCandidates = result?.top_candidates ?? [];
+
   return (
     <main className="page">
       <header className="hero">
@@ -109,8 +113,8 @@ export default function App() {
           <p className="eyebrow">Predicción electoral · KNN</p>
           <h1>Vincula nuevos votantes y conoce su afinidad.</h1>
           <p className="sub">
-            Registra los indicadores sociodemográficos y políticos. El servicio de ML calculará la
-            intención de voto usando el modelo entrenado sobre 3,000 casos.
+            Registra los indicadores sociodemográficos y políticos. El servicio de ML calcula la intención de voto con un
+            KNN calibrado en 3,000 casos reales.
           </p>
         </div>
         <div className="cta-block">
@@ -133,7 +137,8 @@ export default function App() {
         <div className="form-column">
           <h2>Ficha del votante</h2>
           <p className="hint">
-            Completa los campos según las escalas indicadas y selecciona las preferencias visibles en las listas.
+            Completa cada campo numérico según su escala y selecciona las preferencias que correspondan a las opciones
+            visibles.
           </p>
           <form onSubmit={handleSubmit}>
             <div className="grid">
@@ -185,27 +190,52 @@ export default function App() {
         </div>
 
         <aside className="result-pane">
-          <h3>Resultado y notas</h3>
+          <h3>Resultado y métricas</h3>
           <ul>
-            <li>Modelo KNN con búsqueda de hiperparámetros y reducción PCA opcional.</li>
-            <li>Entrenamiento balanceado + métricas macro F1 y balanced accuracy.</li>
-            <li>Umbral configurable para clasificar como "Undecided".</li>
+            <li>Entrenamiento balanceado + validación GroupKFold (macro F1 / balanced accuracy).</li>
+            <li>Normalización fila + PCA opcional para distancias Manhattan/Coseno.</li>
+            <li>Control de indecisos mediante umbral y análisis top‑2.</li>
           </ul>
+
           {result ? (
-            <div className="result-card">
-              <p>Intención estimada</p>
-              <strong>{result.intended_vote}</strong>
-              <small>{result.confidence_note}</small>
+            <div className="insights">
+              <div className="confidence-card">
+                <p>Confianza de la predicción</p>
+                <strong>{formatNumber(result.confidence ?? 0)}</strong>
+                {result.runner_up && (
+                  <span>
+                    2.º lugar: {result.runner_up.candidate} ({formatNumber(result.runner_up.probability)})
+                  </span>
+                )}
+              </div>
+
+              <div className="bars">
+                {topCandidates.map((item) => (
+                  <div key={item.candidate} className="bar-row">
+                    <span>{item.candidate}</span>
+                    <div className="bar">
+                      <div className="bar-fill" style={{ width: `${item.probability * 100}%` }} />
+                      <span className="value">{formatNumber(item.probability)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="result-card">
+                <p>Intención estimada</p>
+                <strong>{result.intended_vote}</strong>
+                <small>{result.confidence_note}</small>
+              </div>
             </div>
           ) : (
             <div className="result-card ghost">
-              Completa la ficha para visualizar la predicción del modelo.
+              Completa la ficha para visualizar la predicción del modelo y las probabilidades asociadas.
             </div>
           )}
         </aside>
       </section>
 
-      <footer>By Andres Melo & Thomas Cristancho – Universidad de Cundinamarca 2025</footer>
+      <footer>By Andres Melo &amp; Thomas Cristancho – Universidad de Cundinamarca 2025</footer>
     </main>
   );
 }
