@@ -1,102 +1,157 @@
-<!-- technical-overview: EndDark16/voter_intentions -->
+# Voter Intentions: KNN Pipeline and API
 
-**Introduccion tecnica**
+A machine-learning project that predicts a survey respondent's stated vote intention from structured profile and survey features.
 
-Proyecto de machine learning para clasificar intencion de voto mediante un pipeline KNN de scikit-learn. Incluye entrenamiento y evaluacion, artefactos y reportes, API de inferencia FastAPI, interfaz React/Vite y orquestacion Docker Compose.
+> This is an educational model built from the repository's dataset. It is not an election forecast or a basis for real-world voter targeting or policy decisions.
 
----
+## Overview
 
-## Voter intention KNN stack
+The repository contains a complete tabular ML workflow: preprocessing, cross-validated hyperparameter search, held-out evaluation, model serialization, and a FastAPI inference service. A React/Vite frontend and Docker Compose configuration provide a local end-to-end path from the UI to the model API.
 
-Este repositorio contiene todo lo necesario para entrenar, evaluar y desplegar como servicio un modelo de K vecinos más cercanos que predice la intención de voto de electores usando el dataset `voter_intentions_3000.csv`.
+## Key Features
 
-### Estructura
+- Custom handling of missing secondary-choice labels
+- Numeric imputation and scaling plus categorical imputation and one-hot encoding
+- K-nearest-neighbors model selection with stratified 5-fold grid search
+- Persisted preprocessing/model pipeline and label encoder
+- Per-class evaluation report and confusion matrix artifacts
+- Pydantic-validated FastAPI endpoints for health and prediction
+- React/Vite client and Docker Compose setup for local use
 
-- `src/train_knn.py`: script principal de entrenamiento/evaluación.
-- `src/custom_transformers.py`: imputador personalizado para `secondary_choice`.
-- `artifacts/knn_voter_intentions.joblib`: paquete serializado (pipeline + LabelEncoder).
-- `reports/`: métricas, matriz de confusión (`.png`/`.csv`) y reporte detallado (`.json`).
-- `ml_service/`: API FastAPI dockerizable (`app.py`, `Dockerfile`, `requirements.txt`).
-- `frontend/`: SPA React (Vite) junto con su `Dockerfile`.
-- `notebooks/colab_template.ipynb`: plantilla lista para subir a Google Colab.
-- `docker-compose.yml`: orquesta API y frontend en contenedores separados.
+## Architecture
 
-### Cómo entrenar el modelo
+```mermaid
+flowchart LR
+    CSV[Survey dataset] --> Train[Preprocessing and 5-fold model search]
+    Train --> Bundle[Serialized pipeline and label encoder]
+    Bundle --> API[FastAPI inference service]
+    Browser[React and Vite frontend] --> API
+    Train --> Reports[Metrics and confusion matrix]
+```
 
-1. **Entorno Python**
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\activate
-   pip install --upgrade pip
-   pip install -r requirements.txt  # usa Python 3.11 para evitar builds nativos en Windows/py3.13
-   ```
-   > Nota: En esta máquina `pip install` falló porque Python 3.13 todavía no tiene wheels para `pydantic-core` y pandas requiere VS Build Tools. Con Anaconda o Python 3.11 el procedimiento funciona sin pasos extra.
+Preprocessing is part of the persisted scikit-learn pipeline, so the serving API applies the same transformations used during model fitting. The API validates the input schema before invoking the model.
 
-2. **Ejecutar entrenamiento**
-   ```powershell
-   python src/train_knn.py
-   ```
-   El script:
-   - Imputa variables numéricas con `IterativeImputer`+`LinearRegression`.
-   - Completa `secondary_choice` usando un `RandomForestClassifier`.
-   - Ajusta un pipeline `ColumnTransformer + KNeighborsClassifier` con búsqueda en malla (5xCV).
-   - Guarda modelo (`artifacts/knn_voter_intentions.joblib`) y métricas (`reports/*`).
+## Tech Stack
 
-3. **Resultados clave**
-   - Accuracy de referencia: 0.798
-   - `reports/knn_metrics.json`: accuracy y f1 (macro/weighted).
-   - `reports/knn_classification_report.json`: métricas por clase.
-   - `reports/knn_confusion_matrix.png`: matriz visual.
+- **Modeling:** Python, pandas, NumPy, scikit-learn, joblib
+- **API:** FastAPI, Uvicorn, Pydantic
+- **Frontend:** React, Vite
+- **Packaging:** Docker, Docker Compose
+- **Experiment assets:** Jupyter notebook, JSON/CSV reports, confusion-matrix image
 
-4. **Google Colab**
-   - Abre `notebooks/colab_template.ipynb` en Colab, sube `voter_intentions_3000.csv`, ejecuta todas las celdas y descarga el joblib generado para publicarlo.
+## Project Structure
 
-### Servicio de ML
+```text
+src/                 Training pipeline and custom transformers
+ml_service/          FastAPI prediction service
+frontend/            React/Vite client
+artifacts/           Serialized model bundle
+reports/             Evaluation metrics and confusion matrix
+notebooks/           Colab training notebook
+docker-compose.yml   Local API and frontend orchestration
+```
 
-1. **Variables esperadas**: coincide con las 30 columnas numéricas + `primary_choice`/`secondary_choice`.
-2. **Ejecutar local**
-   ```powershell
-   set PYTHONPATH=src
-   uvicorn ml_service.app:app --reload --port 8000
-   ```
-3. **Endpoint principal**
-   - `POST /predict` → JSON con el perfil del votante, responde `{ intended_vote, confidence_note }`.
-   - `GET /health` → comprobación.
-4. **Contenedor**
-   ```powershell
-   docker build -f ml_service/Dockerfile -t voter-knn-api .
-   docker run -p 8000:8000 voter-knn-api
-   ```
+## Demo
 
-### Frontend (React + Vite)
+A public hosted demo is not currently available. Run the API and frontend locally with Docker Compose, or start each service separately as described below. The bundled dataset and model artifacts are intended for demonstration and evaluation.
 
-1. **Uso local**
-   ```powershell
-   cd frontend
-   npm install
-   npm run dev  # http://localhost:4173
-   ```
-   Ajusta `VITE_API_URL` en `.env` si el servicio de ML vive en otra URL.
+## Getting Started
 
-2. **Build/contenerización**
-   ```powershell
-   docker build -f frontend/Dockerfile -t voter-knn-frontend .
-   docker run -p 4173:80 voter-knn-frontend
-   ```
+### Prerequisites
 
-### Orquestación rápida
+- Python 3.11 recommended for the pinned dependency set
+- Node.js and npm for running the frontend outside Docker
+- Docker Desktop for the combined local setup
 
-Con Docker Desktop basta con:
+### Train the model
+
+```bash
+git clone https://github.com/EndDark16/voter_intentions.git
+cd voter_intentions
+python -m venv .venv
+```
+
+Activate the environment and install the pinned Python dependencies:
+
 ```powershell
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python src/train_knn.py
+```
+
+Training reads `voter_intentions_3000.csv`, performs a stratified 80/20 train/test split, tunes the KNN pipeline with 5-fold cross-validation, and writes the model bundle and evaluation artifacts.
+
+### Run the API and frontend with Docker
+
+The repository includes the model artifact expected by the API. From the project root:
+
+```bash
 docker compose up --build
 ```
-- API: http://localhost:8000
-- Frontend: http://localhost:4173 (consume la API publicada en el host)
 
-### Procedimientos finales para ti
+- Frontend: `http://localhost:4173`
+- API: `http://localhost:8000`
+- Interactive API docs: `http://localhost:8000/docs`
 
-1. **Google Colab**: sube `notebooks/colab_template.ipynb`, ejecuta todo, publica el notebook y comparte el link público según las instrucciones del curso.
-2. **Reentrenar si cambian los datos**: corre `python src/train_knn.py` y sube el nuevo `artifacts/knn_voter_intentions.joblib` al contenedor de la API.
-3. **ML Service**: construye y publica la imagen `voter-knn-api` en el registry o nube que prefieras; asegúrate de exponer el puerto 8000 y de añadir health checks.
-4. **Frontend**: ejecuta `npm run build`, sube la carpeta `dist/` a tu hosting preferido o usa el `frontend/Dockerfile` y enlaza la variable `VITE_API_URL` al dominio del API (p. ej. `https://midominio.com/api`).
-5. **Entrega final**: levanta ambos contenedores (`docker compose up`), graba la demo para la presentación presencial y documenta las credenciales o endpoints en el aula virtual.
+### Run services separately
+
+For the API, activate the Python environment above and set the module path:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m uvicorn ml_service.app:app --reload --port 8000
+```
+
+For the frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite uses its default development port unless configured otherwise. Set `VITE_API_URL` when the API is not reachable at the URL configured by the frontend.
+
+## API
+
+The FastAPI service exposes:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/health` | Service health check |
+| `POST` | `/predict` | Predict an intended-vote label from the required survey feature schema |
+
+The prediction response contains `intended_vote` and a `confidence_note`. KNN probabilities are not calibrated by this service; the response explicitly cautions against treating the result as a calibrated probability. The full request schema is in [`ml_service/app.py`](ml_service/app.py), and local interactive documentation is available at `/docs`.
+
+## Machine Learning
+
+The target is `intended_vote`. The pipeline handles 30 numeric features and two categorical choice features. Numeric values use iterative imputation and standardization; categorical values use most-frequent imputation and one-hot encoding. A custom transformer fills missing `secondary_choice` values. `GridSearchCV` evaluates KNN settings over five folds using macro-F1, then the selected pipeline is evaluated on a stratified 20% holdout.
+
+## Results
+
+These metrics are copied from the checked-in `reports/knn_metrics.json` artifact:
+
+| Metric | Holdout score |
+|---|---:|
+| Accuracy | 0.7983 |
+| Macro F1 | 0.2503 |
+| Weighted F1 | 0.7522 |
+
+Accuracy is substantially higher than macro-F1, so it should not be read as balanced performance across all classes. Review [`reports/knn_classification_report.json`](reports/knn_classification_report.json) and the confusion matrix before drawing conclusions.
+
+## Testing and CI
+
+The repository currently has no dedicated automated test suite or GitHub Actions workflow. Model evaluation is performed by the training pipeline and its held-out report artifacts.
+
+## Engineering Decisions
+
+- **Keep preprocessing with the estimator:** serializing the full scikit-learn pipeline reduces the risk of training/serving transformations drifting apart.
+- **Tune for macro-F1:** the search objective values class-level balance rather than optimizing accuracy alone; the stored holdout metrics make the remaining gap visible.
+- **Expose a narrow prediction contract:** Pydantic validates the request shape and the API returns a label plus a caveat instead of presenting an uncalibrated KNN score as probability.
+
+## Future Improvements
+
+- Add tests for preprocessing, model loading, schema validation, and API responses.
+- Add CI checks for the training pipeline and container builds.
+- Evaluate class-level performance and calibration before any non-educational use.
