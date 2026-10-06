@@ -1,3 +1,11 @@
+<!-- technical-overview: EndDark16/voter_intentions -->
+
+**Introduccion tecnica**
+
+Proyecto de machine learning para clasificar intencion de voto mediante un pipeline KNN de scikit-learn. Incluye entrenamiento y evaluacion, artefactos y reportes, API de inferencia FastAPI, interfaz React/Vite y orquestacion Docker Compose.
+
+---
+
 ## Voter intention KNN stack
 
 Este repositorio contiene todo lo necesario para entrenar, evaluar y desplegar como servicio un modelo de K vecinos más cercanos que predice la intención de voto de electores usando el dataset `voter_intentions_3000.csv`.
